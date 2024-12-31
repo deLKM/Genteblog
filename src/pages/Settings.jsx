@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { updateProfile } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function Settings() {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', content: '' });
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     displayName: currentUser?.displayName || '',
     email: currentUser?.email || '',
     bio: '',
     website: '',
     location: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    photoURL: currentUser?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.email || 'default'}`
   });
 
   const handleInputChange = (e) => {
@@ -24,10 +27,100 @@ export default function Settings() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      setMessage({
+        type: 'error',
+        content: '请选择图片文件'
+      });
+      return;
+    }
+
+    // 验证文件大小（最大 2MB）
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({
+        type: 'error',
+        content: '图片大小不能超过 2MB'
+      });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ type: '', content: '' });
+
+    try {
+      const storage = getStorage();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatars/${currentUser.uid}_${Date.now()}.${fileExt}`;
+      const storageRef = ref(storage, fileName);
+
+      // 上传文件
+      await uploadBytes(storageRef, file);
+      
+      // 获取下载链接
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // 更新用户头像
+      await updateProfile(currentUser, {
+        photoURL: downloadURL
+      });
+
+      // 更新本地状态
+      setFormData(prev => ({
+        ...prev,
+        photoURL: downloadURL
+      }));
+
+      setMessage({
+        type: 'success',
+        content: '头像已更新'
+      });
+    } catch (error) {
+      console.error('头像上传失败:', error);
+      setMessage({
+        type: 'error',
+        content: '头像上传失败，请重试'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: 实现保存功能
-    console.log('保存设置:', formData);
+    setLoading(true);
+    setMessage({ type: '', content: '' });
+
+    try {
+      // 更新 Firebase Auth 用户信息
+      await updateProfile(currentUser, {
+        displayName: formData.displayName
+      });
+
+      // TODO: 在这里添加更新用户其他信息到数据库的逻辑
+      // 例如：bio, website, location 等信息需要存储到 Firestore
+
+      setMessage({
+        type: 'success',
+        content: '个人资料已更新'
+      });
+    } catch (error) {
+      console.error('更新失败:', error);
+      setMessage({
+        type: 'error',
+        content: '更新失败，请重试'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,16 +157,6 @@ export default function Settings() {
                   个人资料
                 </button>
                 <button
-                  onClick={() => setActiveTab('security')}
-                  className={`px-6 py-4 text-sm font-medium border-b-2 ${
-                    activeTab === 'security'
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  账号安全
-                </button>
-                <button
                   onClick={() => setActiveTab('notification')}
                   className={`px-6 py-4 text-sm font-medium border-b-2 ${
                     activeTab === 'notification'
@@ -87,6 +170,15 @@ export default function Settings() {
             </div>
 
             <div className="p-6">
+              {/* 消息提示 */}
+              {message.content && (
+                <div className={`mb-4 p-4 rounded-md ${
+                  message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                }`}>
+                  {message.content}
+                </div>
+              )}
+
               {activeTab === 'profile' && (
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-6">
@@ -94,18 +186,45 @@ export default function Settings() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">头像</label>
                       <div className="flex items-center">
-                        <img
-                          className="h-16 w-16 rounded-full ring-2 ring-white"
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.email || 'default'}`}
-                          alt="用户头像"
+                        <div className="relative group">
+                          <img
+                            className="h-16 w-16 rounded-full ring-2 ring-white object-cover"
+                            src={formData.photoURL}
+                            alt="用户头像"
+                          />
+                          <div
+                            className="absolute inset-0 flex items-center justify-center rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            onClick={handleAvatarClick}
+                          >
+                            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarChange}
                         />
                         <button
                           type="button"
-                          className="ml-4 bg-white px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          onClick={handleAvatarClick}
+                          disabled={loading}
+                          className={`ml-4 px-4 py-2 border rounded-md text-sm font-medium transition-colors ${
+                            loading
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
                         >
-                          更换头像
+                          {loading ? '上传中...' : '更换头像'}
                         </button>
                       </div>
+                      <p className="mt-2 text-sm text-gray-500">
+                        支持 JPG、PNG 格式，最大 2MB
+                      </p>
                     </div>
 
                     {/* 昵称 */}
@@ -120,6 +239,7 @@ export default function Settings() {
                         value={formData.displayName}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        required
                       />
                     </div>
 
@@ -150,6 +270,7 @@ export default function Settings() {
                         value={formData.website}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="https://"
                       />
                     </div>
 
@@ -172,84 +293,14 @@ export default function Settings() {
                   <div className="mt-6">
                     <button
                       type="submit"
-                      className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+                      disabled={loading}
+                      className={`w-full px-4 py-2 rounded-md text-white transition-colors ${
+                        loading 
+                          ? 'bg-indigo-400 cursor-not-allowed'
+                          : 'bg-indigo-600 hover:bg-indigo-700'
+                      }`}
                     >
-                      保存修改
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {activeTab === 'security' && (
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-6">
-                    {/* 邮箱 */}
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        邮箱
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        disabled
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50"
-                      />
-                    </div>
-
-                    {/* 当前密码 */}
-                    <div>
-                      <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                        当前密码
-                      </label>
-                      <input
-                        type="password"
-                        id="currentPassword"
-                        name="currentPassword"
-                        value={formData.currentPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-
-                    {/* 新密码 */}
-                    <div>
-                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                        新密码
-                      </label>
-                      <input
-                        type="password"
-                        id="newPassword"
-                        name="newPassword"
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-
-                    {/* 确认新密码 */}
-                    <div>
-                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                        确认新密码
-                      </label>
-                      <input
-                        type="password"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <button
-                      type="submit"
-                      className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
-                    >
-                      修改密码
+                      {loading ? '保存中...' : '保存修改'}
                     </button>
                   </div>
                 </form>
