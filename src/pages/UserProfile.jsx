@@ -112,6 +112,19 @@ export default function UserProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 返回首页按钮 */}
+      <div className="fixed top-4 left-4 z-50">
+        <Link
+          to="/home"
+          className="flex items-center space-x-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all duration-200 text-gray-700 hover:text-indigo-600"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>返回首页</span>
+        </Link>
+      </div>
+
       {/* 装饰性几何图形 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-primary-100/30 rounded-full transform translate-x-1/2 -translate-y-1/2 blur-3xl"/>
