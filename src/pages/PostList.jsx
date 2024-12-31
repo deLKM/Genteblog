@@ -359,12 +359,15 @@ function PostList() {
 
               {/* 右侧操作区 - 简化布局 */}
               <div className="flex items-center ml-4 space-x-4">
-                <button className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Link
+                  to="/new-post"
+                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                   </svg>
                   <span>写文章</span>
-                </button>
+                </Link>
 
                 {/* 用户菜单组件 */}
                 <UserMenu />

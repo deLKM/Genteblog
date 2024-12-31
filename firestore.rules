@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 用户文档
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 文章文档
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        (resource.data.authorId == request.auth.uid || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    // 评论文档
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        (resource.data.authorId == request.auth.uid || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+  }
+} 

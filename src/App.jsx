@@ -8,6 +8,7 @@ import UserProfile from './pages/UserProfile'
 import Drafts from './pages/Drafts'
 import Bookmarks from './pages/Bookmarks'
 import Settings from './pages/Settings'
+import NewPost from './pages/NewPost'
 import PrivateRoute from './components/PrivateRoute'
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route path="/drafts" element={<PrivateRoute><Drafts /></PrivateRoute>} />
           <Route path="/bookmarks" element={<PrivateRoute><Bookmarks /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+          <Route path="/new-post" element={<PrivateRoute><NewPost /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
     </Router>
