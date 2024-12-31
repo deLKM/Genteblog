@@ -16,9 +16,23 @@ export default function Login() {
       setError('');
       setLoading(true);
       await login(email, password);
-      navigate('/');
+      navigate('/home');
     } catch (err) {
-      setError('登录失败: ' + err.message);
+      console.error('登录错误:', err);
+      // 根据错误类型显示不同的错误信息
+      switch (err.code) {
+        case 'auth/invalid-credential':
+          setError('邮箱或密码错误');
+          break;
+        case 'auth/user-not-found':
+          setError('用户不存在');
+          break;
+        case 'auth/wrong-password':
+          setError('密码错误');
+          break;
+        default:
+          setError('登录失败: ' + err.message);
+      }
     }
     setLoading(false);
   }

@@ -68,7 +68,7 @@ function PostDetail() {
         <div className="max-w-[800px] mx-auto py-8">
           {/* 返回按钮 */}
           <Link 
-            to="/"
+            to="/home"
             className="inline-flex items-center text-gray-500 hover:text-indigo-600 mb-6 transition-colors"
           >
             <svg className="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

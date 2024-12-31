@@ -10,9 +10,15 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 
+// 初始化 Auth
+const auth = getAuth(app);
+
+export { auth };
+
+// 监听认证状态变化
 auth.onAuthStateChanged((user) => {
   if (user) {
     console.log('用户已登录:', user.email);
