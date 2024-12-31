@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import UserMenu from '../components/UserMenu'
 import CategoryTabs from '../components/CategoryTabs'
 import ActionButtons from '../components/ActionButtons'
+import { useAuth } from '../contexts/AuthContext'
 
 function PostList() {
+  const { currentUser } = useAuth()
   const [posts] = useState([
     {
       id: 1,
@@ -41,13 +43,6 @@ function PostList() {
   const categories = [
     '全部', '最热门'
   ]
-
-  const currentUser = {
-    id: 1,
-    name: '张三',
-    email: 'zhangsan@example.com',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-  }
 
   const [selectedCategory, setSelectedCategory] = useState('全部')
   const [filteredPosts, setFilteredPosts] = useState([])
@@ -371,16 +366,8 @@ function PostList() {
                   <span>写文章</span>
                 </button>
 
-                {/* 用户头像 - 简化为只显示头像 */}
-                <div className="relative">
-                  <Link to="/profile" className="block">
-                    <img
-                      src={currentUser.avatar}
-                      alt={currentUser.name}
-                      className="w-8 h-8 rounded-full ring-2 ring-white hover:ring-indigo-500 transition-all"
-                    />
-                  </Link>
-                </div>
+                {/* 用户菜单组件 */}
+                <UserMenu />
               </div>
             </div>
 

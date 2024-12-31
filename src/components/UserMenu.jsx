@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
-function UserMenu({ user }) {
+function UserMenu() {
   const [isOpen, setIsOpen] = useState(false)
+  const [error, setError] = useState(null)
   const menuRef = useRef(null)
+  const { currentUser, logout } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -16,28 +20,46 @@ function UserMenu({ user }) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleLogout = async () => {
+    try {
+      setError(null)
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      setError(error.message)
+      console.error('退出登录失败:', error)
+    }
+  }
+
   return (
     <div className="relative" ref={menuRef}>
+      {error && (
+        <div className="absolute top-0 right-0 mt-12 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow-sm">
+          {error}
+        </div>
+      )}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center focus:outline-none"
       >
-        <img
-          className="h-8 w-8 rounded-full ring-2 ring-white hover:ring-indigo-200 transition-all"
-          src={user.avatar}
-          alt="用户头像"
-        />
+        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+          <span className="text-sm font-medium text-primary-600">
+            {currentUser?.email?.[0].toUpperCase()}
+          </span>
+        </div>
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
           <div className="px-4 py-3 border-b">
-            <p className="text-sm font-medium text-gray-900">{user.name}</p>
-            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            <p className="text-sm font-medium text-gray-900">
+              {currentUser?.displayName || '未设置昵称'}
+            </p>
+            <p className="text-xs text-gray-500 truncate">{currentUser?.email}</p>
           </div>
 
           <Link
-            to={`/user/${user.id}`}
+            to="/profile"
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             onClick={() => setIsOpen(false)}
           >
@@ -67,7 +89,7 @@ function UserMenu({ user }) {
             <button
               className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
               onClick={() => {
-                // 处理登出逻辑
+                handleLogout()
                 setIsOpen(false)
               }}
             >

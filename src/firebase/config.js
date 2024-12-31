@@ -11,4 +11,14 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app); 
+export const auth = getAuth(app);
+
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    console.log('用户已登录:', user.email);
+  } else {
+    console.log('用户未登录');
+  }
+}, (error) => {
+  console.error('Auth状态监听错误:', error);
+}); 

@@ -17,34 +17,69 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  function signup(email, password) {
-    return createUserWithEmailAndPassword(auth, email, password);
+  async function signup(email, password) {
+    try {
+      setError(null);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   }
 
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  async function login(email, password) {
+    try {
+      setError(null);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   }
 
-  function logout() {
-    return signOut(auth);
+  async function logout() {
+    try {
+      setError(null);
+      await signOut(auth);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   }
 
-  function resetPassword(email) {
-    return sendPasswordResetEmail(auth, email);
+  async function resetPassword(email) {
+    try {
+      setError(null);
+      await sendPasswordResetEmail(auth, email);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setLoading(false);
-    });
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        setCurrentUser(user);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Auth状态监听错误:', error);
+        setError(error.message);
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, []);
 
   const value = {
     currentUser,
+    error,
     signup,
     login,
     logout,
