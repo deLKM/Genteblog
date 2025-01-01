@@ -7,6 +7,25 @@ import DOMPurify from 'dompurify';
 const DB_NAME = 'BlogDB';
 const DB_VERSION = 1;
 
+// 压缩和解压工具函数
+const compressContent = (content) => {
+  try {
+    return btoa(encodeURIComponent(content));
+  } catch (error) {
+    console.error('压缩内容失败:', error);
+    return content;
+  }
+};
+
+const decompressContent = (compressed) => {
+  try {
+    return compressed ? decodeURIComponent(atob(compressed)) : '';
+  } catch (error) {
+    console.error('解压内容失败:', error);
+    return compressed || '';
+  }
+};
+
 const openDB = () => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -22,16 +41,19 @@ const openDB = () => {
         const postsStore = db.createObjectStore('posts', { keyPath: '_id' });
         postsStore.createIndex('authorId', 'authorId', { unique: false });
         postsStore.createIndex('status', 'status', { unique: false });
+        postsStore.createIndex('updatedAt', 'metadata.updatedAt', { unique: false });
       }
       
       if (!db.objectStoreNames.contains('interactions')) {
         const interactionsStore = db.createObjectStore('interactions', { keyPath: 'id' });
         interactionsStore.createIndex('postId', 'postId', { unique: false });
+        interactionsStore.createIndex('updatedAt', 'updatedAt', { unique: false });
       }
       
       if (!db.objectStoreNames.contains('revisions')) {
         const revisionsStore = db.createObjectStore('revisions', { keyPath: 'id', autoIncrement: true });
         revisionsStore.createIndex('postId', 'postId', { unique: false });
+        revisionsStore.createIndex('createdAt', 'createdAt', { unique: false });
       }
     };
   });
@@ -39,16 +61,183 @@ const openDB = () => {
 
 // 数据库操作工具函数
 const dbOperation = async (storeName, mode, operation) => {
+  let db = null;
+  try {
+    db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, mode);
+      const store = transaction.objectStore(storeName);
+      
+      const request = operation(store);
+      
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+
+      transaction.oncomplete = () => {
+        if (db) {
+          db.close();
+        }
+      };
+
+      transaction.onerror = (event) => {
+        console.error('事务错误:', event.target.error);
+        reject(event.target.error);
+      };
+
+      transaction.onabort = (event) => {
+        console.error('事务中止:', event.target.error);
+        reject(event.target.error);
+      };
+    });
+  } catch (error) {
+    console.error('数据库操作失败:', error);
+    if (db) {
+      db.close();
+    }
+    throw error;
+  }
+};
+
+// 获取所有数据
+const getAllFromStore = async (storeName) => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, mode);
+    const transaction = db.transaction(storeName, 'readonly');
     const store = transaction.objectStore(storeName);
-    
-    const request = operation(store);
+    const request = store.getAll();
     
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+};
+
+// 导入集合数据
+const importCollection = async (store, items) => {
+  for (const item of items) {
+    await store.put(item);
+  }
+};
+
+// 导出数据
+export const exportData = async () => {
+  try {
+    const [posts, interactions, revisions] = await Promise.all([
+      getAllFromStore('posts'),
+      getAllFromStore('interactions'),
+      getAllFromStore('revisions')
+    ]);
+
+    const exportData = {
+      posts,
+      interactions,
+      revisions,
+      exportDate: new Date().toISOString(),
+      version: DB_VERSION
+    };
+
+    // 创建并下载文件
+    const blob = new Blob([JSON.stringify(exportData)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `blog_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    return exportData;
+  } catch (error) {
+    console.error('导出数据失败:', error);
+    throw error;
+  }
+};
+
+// 导入数据
+export const importData = async (file) => {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    if (data.version !== DB_VERSION) {
+      throw new Error('数据版本不匹配');
+    }
+
+    const db = await openDB();
+    const transaction = db.transaction(['posts', 'interactions', 'revisions'], 'readwrite');
+
+    try {
+      await Promise.all([
+        importCollection(transaction.objectStore('posts'), data.posts),
+        importCollection(transaction.objectStore('interactions'), data.interactions),
+        importCollection(transaction.objectStore('revisions'), data.revisions)
+      ]);
+      
+      return true;
+    } catch (error) {
+      transaction.abort();
+      throw error;
+    }
+  } catch (error) {
+    console.error('导入数据失败:', error);
+    throw error;
+  }
+};
+
+// 清理过期数据
+export const cleanupOldData = async () => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
+
+    const db = await openDB();
+    const transaction = db.transaction(['revisions', 'interactions'], 'readwrite');
+
+    // 清理旧的修订记录
+    const revisionsStore = transaction.objectStore('revisions');
+    const revisionsIndex = revisionsStore.index('createdAt');
+    const revisionsRequest = revisionsIndex.openCursor(IDBKeyRange.upperBound(thirtyDaysAgoStr));
+
+    await new Promise((resolve, reject) => {
+      revisionsRequest.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      revisionsRequest.onerror = () => reject(revisionsRequest.error);
+    });
+
+    // 清理已取消的互动记录
+    const interactionsStore = transaction.objectStore('interactions');
+    const interactionsIndex = interactionsStore.index('updatedAt');
+    const interactionsRequest = interactionsIndex.openCursor(IDBKeyRange.upperBound(thirtyDaysAgoStr));
+
+    await new Promise((resolve, reject) => {
+      interactionsRequest.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          const interaction = cursor.value;
+          if (!interaction.active) {
+            cursor.delete();
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      interactionsRequest.onerror = () => reject(interactionsRequest.error);
+    });
+
+    return true;
+  } catch (error) {
+    console.error('清理过期数据失败:', error);
+    throw error;
+  }
 };
 
 // 生成帖子摘要
@@ -114,8 +303,8 @@ export const savePost = async (postData, userId, isDraft = true) => {
     const postToSave = {
       _id: postId,
       title,
-      content,
-      contentHtml,
+      content: compressContent(content), // 压缩内容
+      contentHtml: compressContent(contentHtml), // 压缩HTML
       summary: generateSummary(content),
       category,
       tags: processedTags,
@@ -141,7 +330,7 @@ export const savePost = async (postData, userId, isDraft = true) => {
     if (postData._id) {
       const revision = {
         postId,
-        content,
+        content: compressContent(content),
         authorId: userId,
         createdAt: now,
         reason: isDraft ? '保存草稿' : '更新发布'
@@ -149,7 +338,12 @@ export const savePost = async (postData, userId, isDraft = true) => {
       await dbOperation('revisions', 'readwrite', store => store.add(revision));
     }
 
-    return postToSave;
+    // 返回解压后的数据
+    return {
+      ...postToSave,
+      content: content,
+      contentHtml: contentHtml
+    };
   } catch (error) {
     console.error('保存帖子失败:', error);
     throw error;
@@ -164,9 +358,17 @@ export const getPost = async (postId) => {
       throw new Error('帖子不存在');
     }
 
+    // 解压内容
+    post.content = decompressContent(post.content);
+    post.contentHtml = decompressContent(post.contentHtml);
+
     // 更新浏览量
     post.viewCount = (post.viewCount || 0) + 1;
-    await dbOperation('posts', 'readwrite', store => store.put(post));
+    await dbOperation('posts', 'readwrite', store => store.put({
+      ...post,
+      content: compressContent(post.content),
+      contentHtml: compressContent(post.contentHtml)
+    }));
 
     return post;
   } catch (error) {
@@ -210,34 +412,74 @@ export const getDrafts = async (userId) => {
 
 // 获取用户的已发布帖子
 export const getPublishedPosts = async (userId) => {
+  if (!userId) {
+    console.error('无效的用户ID');
+    return [];
+  }
+
   try {
     const db = await openDB();
+    
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction('posts', 'readonly');
-      const store = transaction.objectStore('posts');
-      const posts = [];
+      try {
+        const transaction = db.transaction('posts', 'readonly');
+        const store = transaction.objectStore('posts');
+        const posts = [];
 
-      const request = store.openCursor();
-      
-      request.onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (cursor) {
-          if (cursor.value.authorId === userId && cursor.value.status === 'published') {
-            posts.push(cursor.value);
+        // 使用索引来优化查询
+        const authorIndex = store.index('authorId');
+        const request = authorIndex.openCursor(IDBKeyRange.only(userId));
+        
+        request.onsuccess = (event) => {
+          const cursor = event.target.result;
+          if (cursor) {
+            const post = cursor.value;
+            if (post.status === 'published') {
+              try {
+                // 解压内容
+                post.content = decompressContent(post.content);
+                post.contentHtml = decompressContent(post.contentHtml);
+                posts.push(post);
+              } catch (error) {
+                console.error('解压文章内容失败:', error);
+                // 继续处理其他文章
+              }
+            }
+            cursor.continue();
+          } else {
+            resolve(posts.sort((a, b) => 
+              new Date(b.metadata.publishedAt) - new Date(a.metadata.publishedAt)
+            ));
           }
-          cursor.continue();
-        } else {
-          resolve(posts.sort((a, b) => 
-            new Date(b.metadata.publishedAt) - new Date(a.metadata.publishedAt)
-          ));
-        }
-      };
-      
-      request.onerror = () => reject(request.error);
+        };
+        
+        request.onerror = (event) => {
+          console.error('获取已发布帖子失败:', event.target.error);
+          reject(event.target.error);
+        };
+
+        transaction.oncomplete = () => {
+          db.close();
+        };
+
+        transaction.onerror = (event) => {
+          console.error('事务失败:', event.target.error);
+          reject(event.target.error);
+        };
+
+        transaction.onabort = (event) => {
+          console.error('事务中止:', event.target.error);
+          reject(event.target.error);
+        };
+
+      } catch (error) {
+        console.error('创建事务失败:', error);
+        reject(error);
+      }
     });
   } catch (error) {
     console.error('获取已发布帖子失败:', error);
-    return [];
+    return []; // 返回空数组而不是抛出错误，避免组件崩溃
   }
 };
 

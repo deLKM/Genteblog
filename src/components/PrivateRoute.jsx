@@ -13,5 +13,9 @@ export default function PrivateRoute({ children }) {
     );
   }
 
-  return currentUser ? children : <Navigate to="/login" />;
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+
+  return typeof children === 'function' ? children({ currentUser }) : children;
 } 

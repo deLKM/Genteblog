@@ -128,23 +128,33 @@ export default function NewPost() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50 relative overflow-hidden">
       {/* 背景装饰 */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-indigo-50/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-        <div className="absolute top-40 -right-4 w-72 h-72 bg-purple-50/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-32 left-20 w-72 h-72 bg-pink-50/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+        {/* 紫色渐变背景 */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-pink-50/50"></div>
+        
+        {/* 几何图形装饰 */}
+        <div className="absolute top-20 left-1/4 w-72 h-72 bg-indigo-100/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute top-40 -right-4 w-72 h-72 bg-purple-100/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-32 left-20 w-72 h-72 bg-pink-100/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+        
+        {/* 网格背景 */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80008012_1px,transparent_1px),linear-gradient(to_bottom,#80008012_1px,transparent_1px)] bg-[size:14px_14px]"></div>
+        
+        {/* 底部装饰 */}
+        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-indigo-100/50 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-indigo-300 to-transparent"></div>
       </div>
 
       {/* 顶部导航栏 */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100">
+      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-indigo-100">
         <div className="max-w-3xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
             {/* 返回按钮 */}
             <Link
               to="/home"
-              className="inline-flex items-center text-gray-600 hover:text-gray-900"
+              className="inline-flex items-center text-gray-600 hover:text-indigo-600 transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -157,7 +167,7 @@ export default function NewPost() {
               <button
                 type="button"
                 onClick={() => setPreviewMode(!previewMode)}
-                className="inline-flex items-center px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors"
+                className="inline-flex items-center px-4 py-2 text-indigo-600 hover:text-indigo-700 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -169,7 +179,7 @@ export default function NewPost() {
                 type="button"
                 disabled={loading}
                 onClick={() => handleSave(true)}
-                className={`inline-flex items-center px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors ${
+                className={`inline-flex items-center px-6 py-2 text-indigo-600 hover:text-indigo-700 transition-colors ${
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -182,7 +192,7 @@ export default function NewPost() {
                 type="button"
                 disabled={loading}
                 onClick={() => handleSave(false)}
-                className={`inline-flex items-center px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors ${
+                className={`inline-flex items-center px-8 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-100 ${
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -209,7 +219,7 @@ export default function NewPost() {
           </div>
         )}
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-indigo-50 hover:shadow-indigo-50 transition-all">
           {/* 标题输入 */}
           <input
             type="text"

@@ -1,101 +1,114 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublishedPosts } from '../services/postService';
-import { getUserStats } from '../services/statsService';
-import { getUserInteractionHistory } from '../services/interactionService';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
 export default function UserProfile() {
   const { userId } = useParams();
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
-  const [userStats, setUserStats] = useState(null);
+  const [userStats, setUserStats] = useState({
+    postCount: 0,
+    likeCount: 0,
+    commentCount: 0
+  });
   const [userInteractions, setUserInteractions] = useState([]);
   const [activeTab, setActiveTab] = useState('posts');
   const [retryCount, setRetryCount] = useState(0);
 
+  // 检查用户登录状态
   useEffect(() => {
+    if (!currentUser) {
+      navigate('/login', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
     const fetchUserData = async () => {
       try {
+        if (!isMounted) return;
         setLoading(true);
         setError(null);
 
         // 检查用户ID是否有效
-        if (!userId) {
-          setError('无效的用户ID');
-          return;
+        if (!userId || !currentUser) {
+          throw new Error('无效的用户ID或未登录');
         }
 
-        // 使用 Promise.allSettled 替代 Promise.all，这样即使某个请求失败也不会影响其他请求
-        const [postsResult, statsResult, interactionsResult] = await Promise.allSettled([
-          getPublishedPosts(userId),
-          getUserStats(userId),
-          getUserInteractionHistory(userId)
-        ]);
+        console.log('开始获取用户数据:', userId);
 
-        // 处理每个请求的结果
-        if (postsResult.status === 'fulfilled') {
-          setUserPosts(postsResult.value);
-        } else {
-          console.error('获取文章失败:', postsResult.reason);
+        // 获取用户的已发布文章
+        const posts = await getPublishedPosts(userId);
+        console.log('获取到的文章:', posts);
+
+        if (!isMounted) return;
+
+        if (!Array.isArray(posts)) {
+          throw new Error('获取文章数据失败');
         }
 
-        if (statsResult.status === 'fulfilled') {
-          setUserStats(statsResult.value);
-        } else {
-          console.error('获取统计数据失败:', statsResult.reason);
-        }
+        setUserPosts(posts);
 
-        if (interactionsResult.status === 'fulfilled') {
-          setUserInteractions(interactionsResult.value);
-        } else {
-          console.error('获取互动记录失败:', interactionsResult.reason);
-        }
+        // 计算用户统计数据
+        const stats = {
+          postCount: posts.length,
+          likeCount: posts.reduce((sum, post) => sum + (post.likeCount || 0), 0),
+          commentCount: posts.reduce((sum, post) => sum + (post.commentCount || 0), 0)
+        };
+        console.log('计算的统计数据:', stats);
+        
+        if (!isMounted) return;
+        setUserStats(stats);
 
-        // 如果所有请求都失败了，显示错误信息
-        if (postsResult.status === 'rejected' && 
-            statsResult.status === 'rejected' && 
-            interactionsResult.status === 'rejected') {
-          setError('获取用户数据失败');
-        }
+        // 获取用户互动记录
+        const interactions = posts.map(post => ({
+          id: post._id,
+          type: 'post',
+          postId: post._id,
+          postTitle: post.title,
+          createdAt: new Date(post.metadata.publishedAt)
+        }));
+        
+        if (!isMounted) return;
+        setUserInteractions(interactions);
+
       } catch (err) {
         console.error('获取用户数据失败:', err);
-        setError('获取用户数据失败');
+        if (!isMounted) return;
+        
+        setError(err.message || '获取用户数据失败');
         
         // 如果失败次数小于3次，尝试重试
         if (retryCount < 3) {
+          const retryDelay = 1000 * Math.pow(2, retryCount);
           setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, 1000 * (retryCount + 1)); // 递增重试延迟
+            if (isMounted) {
+              setRetryCount(prev => prev + 1);
+            }
+          }, retryDelay);
         }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchUserData();
-  }, [userId, retryCount]);
+    if (userId && currentUser) {
+      fetchUserData();
+    }
 
-  // 如果用户未登录，显示提示
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-500 mb-4">请先登录</div>
-          <Link
-            to="/login"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            去登录
-          </Link>
-        </div>
-      </div>
-    );
-  }
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, currentUser, retryCount]);
 
   // 显示加载状态
   if (loading) {
@@ -115,14 +128,22 @@ export default function UserProfile() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 mb-4">{error}</div>
-          {retryCount < 3 && (
-            <button
-              onClick={() => setRetryCount(prev => prev + 1)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+          <div className="space-x-4">
+            {retryCount < 3 && (
+              <button
+                onClick={() => setRetryCount(prev => prev + 1)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                重试
+              </button>
+            )}
+            <Link
+              to="/home"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              重试
-            </button>
-          )}
+              返回首页
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -137,7 +158,7 @@ export default function UserProfile() {
             {/* 用户头像 */}
             <div className="flex-shrink-0">
               <img
-                src={currentUser?.photoURL || '/default-avatar.png'}
+                src={currentUser?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.email || 'default'}`}
                 alt="用户头像"
                 className="w-24 h-24 rounded-full object-cover"
               />
@@ -155,15 +176,15 @@ export default function UserProfile() {
               {/* 统计数据 */}
               <div className="mt-4 flex items-center space-x-8">
                 <div className="text-center">
-                  <div className="text-xl font-semibold text-gray-900">{userStats?.postCount || 0}</div>
+                  <div className="text-xl font-semibold text-gray-900">{userStats.postCount}</div>
                   <div className="text-sm text-gray-500">文章</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-semibold text-gray-900">{userStats?.likeCount || 0}</div>
+                  <div className="text-xl font-semibold text-gray-900">{userStats.likeCount}</div>
                   <div className="text-sm text-gray-500">获赞</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-semibold text-gray-900">{userStats?.commentCount || 0}</div>
+                  <div className="text-xl font-semibold text-gray-900">{userStats.commentCount}</div>
                   <div className="text-sm text-gray-500">评论</div>
                 </div>
               </div>
@@ -216,18 +237,18 @@ export default function UserProfile() {
           <div className="mt-6 space-y-6">
             {userPosts.length > 0 ? (
               userPosts.map(post => (
-                <article key={post.id} className="bg-white rounded-lg shadow p-6">
-                  <Link to={`/post/${post.id}`} className="block">
+                <article key={post._id} className="bg-white rounded-lg shadow p-6">
+                  <Link to={`/post/${post._id}`} className="block">
                     <h2 className="text-xl font-semibold text-gray-900 hover:text-indigo-600">
                       {post.title}
                     </h2>
                     <p className="mt-2 text-gray-500 line-clamp-2">{post.summary}</p>
                     <div className="mt-4 flex items-center text-sm text-gray-500">
-                      <span>{formatDistanceToNow(post.metadata.publishedAt.toDate(), { addSuffix: true, locale: zhCN })}</span>
+                      <span>{formatDistanceToNow(new Date(post.metadata.publishedAt), { addSuffix: true, locale: zhCN })}</span>
                       <span className="mx-2">·</span>
-                      <span>{post.viewCount} 次阅读</span>
+                      <span>{post.viewCount || 0} 次阅读</span>
                       <span className="mx-2">·</span>
-                      <span>{post.likeCount} 次点赞</span>
+                      <span>{post.likeCount || 0} 次点赞</span>
                     </div>
                   </Link>
                 </article>
@@ -248,11 +269,11 @@ export default function UserProfile() {
                 <div key={interaction.id} className="bg-white rounded-lg shadow p-4">
                   <div className="flex items-center text-sm text-gray-500">
                     <span>
-                      {interaction.type === 'like' ? '点赞了文章' : '收藏了文章'}
+                      发布了文章
                     </span>
                     <span className="mx-2">·</span>
                     <span>
-                      {formatDistanceToNow(interaction.createdAt.toDate(), { addSuffix: true, locale: zhCN })}
+                      {formatDistanceToNow(interaction.createdAt, { addSuffix: true, locale: zhCN })}
                     </span>
                   </div>
                   <Link
