@@ -10,22 +10,23 @@ import Bookmarks from './pages/Bookmarks'
 import Settings from './pages/Settings'
 import NewPost from './pages/NewPost'
 import PrivateRoute from './components/PrivateRoute'
+import Register from './components/Register'
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
           <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/posts/:id" element={<PrivateRoute><PostDetail /></PrivateRoute>} />
-          <Route path="/profile" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
+          <Route path="/new-post" element={<PrivateRoute><NewPost /></PrivateRoute>} />
+          <Route path="/post/:postId" element={<PrivateRoute><PostDetail /></PrivateRoute>} />
           <Route path="/drafts" element={<PrivateRoute><Drafts /></PrivateRoute>} />
           <Route path="/bookmarks" element={<PrivateRoute><Bookmarks /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-          <Route path="/new-post" element={<PrivateRoute><NewPost /></PrivateRoute>} />
+          <Route path="/user/:userId" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
     </Router>
