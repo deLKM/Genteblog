@@ -238,7 +238,7 @@ export default function Settings() {
                         name="displayName"
                         value={formData.displayName}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-indigo-500 focus:border-indigo-500"
                         required
                       />
                     </div>
@@ -254,7 +254,7 @@ export default function Settings() {
                         rows="3"
                         value={formData.bio}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
 
@@ -269,7 +269,7 @@ export default function Settings() {
                         name="website"
                         value={formData.website}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="https://"
                       />
                     </div>
@@ -285,7 +285,7 @@ export default function Settings() {
                         name="location"
                         value={formData.location}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                   </div>
@@ -294,11 +294,7 @@ export default function Settings() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className={`w-full px-4 py-2 rounded-md text-white transition-colors ${
-                        loading 
-                          ? 'bg-indigo-400 cursor-not-allowed'
-                          : 'bg-indigo-600 hover:bg-indigo-700'
-                      }`}
+                      className="px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
                     >
                       {loading ? '保存中...' : '保存修改'}
                     </button>

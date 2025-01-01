@@ -39,7 +39,7 @@ export default function EditProfileModal({ isOpen, onClose, userStats, onSave })
               type="text"
               value={formData.displayName}
               onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="输入你想显示的名称"
             />
           </div>
@@ -51,7 +51,7 @@ export default function EditProfileModal({ isOpen, onClose, userStats, onSave })
             <textarea
               value={formData.bio}
               onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               rows="4"
               placeholder="介绍一下你自己..."
             />
@@ -65,7 +65,7 @@ export default function EditProfileModal({ isOpen, onClose, userStats, onSave })
               type="url"
               value={formData.website}
               onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="https://your-website.com"
             />
           </div>
@@ -78,7 +78,7 @@ export default function EditProfileModal({ isOpen, onClose, userStats, onSave })
               type="text"
               value={formData.location}
               onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="城市，国家"
             />
           </div>
@@ -93,7 +93,7 @@ export default function EditProfileModal({ isOpen, onClose, userStats, onSave })
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-primary-100 text-gray-900 rounded-lg hover:bg-primary-200 transition-all duration-200"
+              className="px-6 py-2 bg-primary-100 text-gray-900 rounded-full hover:bg-primary-200 transition-all duration-200"
             >
               保存更改
             </button>

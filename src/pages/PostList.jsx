@@ -436,7 +436,7 @@ function PostList() {
                       {post.tags.map(tag => (
                         <span
                           key={tag}
-                          className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                          className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                         >
                           #{tag}
                         </span>
