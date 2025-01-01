@@ -4,43 +4,43 @@ Genteblog是一个现代化的Web文章平台，专注于提供优质的写作�
 
 ## ✨ 特性
 
-- 🎨 **优雅的界面设计**
-  - 现代化的UI/UX设计
-  - 响应式布局，支持多端访问
-  - 自定义主题和个性化设置
+- 🎨 **现代化界面设计**
+  - 简洁优雅的UI设计
+  - 响应式布局，适配多种设备
+  - TailwindCSS定制样式
+  - 半圆形按钮设计
 
-- ✍️ **专业的写作体验**
-  - Markdown编辑器
-  - 实时预览
-  - 自动保存
-  - 图片上传和管理
-  - 文章封面设计工具
+- ✍️ **文章功能**
+  - Markdown编辑器支持
+  - 代码高亮显示（Prism.js）
+  - 文章实时渲染
+  - 文章发布管理
 
-- 👥 **用户系统**
-  - 邮箱注册登录
+- 👥 **社交功能**
+  - 用户关注系统
+  - 文章收藏功能
   - 个人主页定制
-  - 文章管理
-  - 数据统计
+  - 用户资料管理
 
-- 🔍 **内容发现**
-  - 智能推荐
-  - 标签分类
-  - 搜索功能
-  - 热门排行
+- 🔍 **内容展示**
+  - 最新文章实时更新
+  - 首页文章流
+  - 个人文章管理
+  - 用户互动功能
 
 ## 🚀 技术栈
 
-- **前端**
+- **前端框架**
   - React 18
   - Vite
   - TailwindCSS
-  - Firebase Auth
-  - React Router
+  - @tailwindcss/typography
 
-- **后端**
-  - Firebase
-  - Cloud Functions
-  - Cloud Storage
+- **功能组件**
+  - React Router DOM
+  - Marked（Markdown渲染）
+  - Prism.js（代码高亮）
+  - Firebase集成
 
 ## 📦 安装
 
@@ -55,71 +55,54 @@ cd Genteblog
 npm install
 ```
 
-3. 配置环境变量
-```bash
-cp .env.example .env
-```
-编辑 `.env` 文件，填入你的Firebase配置信息。
-
-4. 启动开发服务器
+3. 启动开发服务器
 ```bash
 npm run dev
 ```
 
-## 🔧 配置
+## 🔧 主要功能
 
-### Firebase 配置
-
-1. 创建Firebase项目
-2. 开启Authentication服务
-3. 配置Storage规则
-4. 将配置信息添加到环境变量
-
-### 环境变量
-
-```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-## 📝 使用指南
+### 文章系统
+- 支持Markdown格式写作
+- 代码块语法高亮
+- 文章实时预览
+- 最新文章展示
 
 ### 用户功能
+- 用户关注系统
+- 文章收藏功能
+- 个人主页管理
+- 用户资料设置
 
-- **注册/登录**：支持邮箱注册和登录
-- **个人主页**：自定义个人资料和封面图
-- **文章管理**：创建、编辑、删除文章
-- **数据统计**：查看阅读量和点赞数据
+### 界面特点
+- 现代化UI设计
+- 半圆形按钮样式
+- 响应式布局
+- 优雅的排版样式
 
-### 写作功能
+## 📝 开发说明
 
-- **创建文章**：支持Markdown格式
-- **封面设计**：内置封面生成器和上传功能
-- **草稿保存**：自动保存草稿
-- **发布设置**：控制文章可见性
+### 依赖包
+- `marked`: Markdown解析
+- `prismjs`: 代码高亮
+- `@tailwindcss/typography`: 排版样式增强
 
-## 🤝 贡献指南
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开Pull Request
+### 样式设计
+- 使用TailwindCSS进行样式管理
+- 自定义UI组件设计
+- 响应式布局适配
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+本项目采用 MIT 许可证
 
 ## 🙏 致谢
 
+感谢以下开源项目的支持：
 - [React](https://reactjs.org/)
 - [Vite](https://vitejs.dev/)
 - [TailwindCSS](https://tailwindcss.com/)
-- [Firebase](https://firebase.google.com/)
-- [React Router](https://reactrouter.com/)
+- [Marked](https://marked.js.org/)
+- [Prism.js](https://prismjs.com/)
 
-<p align="center">Made with ❤️ by Your Team</p>
+<p align="center">Made with ❤️ by Chingyu</p>
