@@ -1,21 +1,17 @@
-import { db, storage } from '../firebase';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  increment,
-  serverTimestamp 
-} from 'firebase/firestore';
+import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+
+const POSTS_STORAGE_KEY = 'blog_posts';
+const POST_INTERACTIONS_KEY = 'blog_post_interactions';
+const POST_REVISIONS_KEY = 'blog_post_revisions';
+
+// 获取所有帖子
+const getAllPosts = () => {
+  const posts = localStorage.getItem(POSTS_STORAGE_KEY);
+  return posts ? JSON.parse(posts) : [];
+};
 
 // 生成帖子摘要
 const generateSummary = (content, length = 200) => {
@@ -40,9 +36,10 @@ const uploadCoverImage = async (file, postId) => {
 // 创建或更新帖子
 export const savePost = async (postData, userId, isDraft = true) => {
   const { title, content, category, tags, coverImage } = postData;
+  const posts = getAllPosts();
   
   // 生成帖子 ID（如果是新帖子）
-  const postId = postData.id || doc(collection(db, 'posts')).id;
+  const postId = postData.id || Date.now().toString();
   
   // 处理标签
   const processedTags = tags.split(',')
@@ -53,19 +50,20 @@ export const savePost = async (postData, userId, isDraft = true) => {
   const contentHtml = DOMPurify.sanitize(marked(content));
   
   // 计算元数据
+  const now = new Date().toISOString();
   const metadata = {
     wordCount: content.length,
     readingTime: calculateReadingTime(content),
-    lastEditedAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
+    lastEditedAt: now,
+    updatedAt: now
   };
 
   if (!postData.id) {
-    metadata.createdAt = serverTimestamp();
+    metadata.createdAt = now;
   }
 
   if (!isDraft) {
-    metadata.publishedAt = serverTimestamp();
+    metadata.publishedAt = now;
   }
 
   // 上传封面图片
@@ -98,120 +96,114 @@ export const savePost = async (postData, userId, isDraft = true) => {
     }
   };
 
-  // 保存帖子
-  const postRef = doc(db, 'posts', postId);
-  
   if (!postData.id) {
     // 新帖子
-    await setDoc(postRef, postToSave);
+    posts.push(postToSave);
   } else {
     // 更新帖子
-    const { id, ...updateData } = postToSave;
-    await updateDoc(postRef, updateData);
+    const index = posts.findIndex(post => post.id === postId);
+    if (index === -1) throw new Error('帖子不存在');
+    posts[index] = postToSave;
 
     // 保存修订版本
-    const revisionRef = doc(collection(db, 'post_revisions'));
-    await setDoc(revisionRef, {
-      id: revisionRef.id,
+    const revisions = JSON.parse(localStorage.getItem(POST_REVISIONS_KEY) || '[]');
+    revisions.push({
+      id: Date.now().toString(),
       postId,
       content,
       authorId: userId,
-      createdAt: serverTimestamp(),
+      createdAt: now,
       reason: isDraft ? '保存草稿' : '更新发布'
     });
+    localStorage.setItem(POST_REVISIONS_KEY, JSON.stringify(revisions));
   }
 
+  localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
   return postToSave;
 };
 
 // 获取帖子详情
-export const getPost = async (postId) => {
-  const postRef = doc(db, 'posts', postId);
-  const postSnap = await getDoc(postRef);
+export const getPost = (postId) => {
+  const posts = getAllPosts();
+  const post = posts.find(p => p.id === postId);
   
-  if (!postSnap.exists()) {
+  if (!post) {
     throw new Error('帖子不存在');
   }
 
   // 更新浏览量
-  await updateDoc(postRef, {
-    viewCount: increment(1)
-  });
+  post.viewCount += 1;
+  localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
 
-  return postSnap.data();
+  return post;
 };
 
 // 获取用户的草稿
-export const getDrafts = async (userId) => {
-  const q = query(
-    collection(db, 'posts'),
-    where('authorId', '==', userId),
-    where('status', '==', 'draft'),
-    orderBy('metadata.updatedAt', 'desc')
-  );
-
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => doc.data());
+export const getDrafts = (userId) => {
+  const posts = getAllPosts();
+  return posts
+    .filter(post => post.authorId === userId && post.status === 'draft')
+    .sort((a, b) => new Date(b.metadata.updatedAt) - new Date(a.metadata.updatedAt));
 };
 
 // 获取用户的已发布帖子
-export const getPublishedPosts = async (userId) => {
-  const q = query(
-    collection(db, 'posts'),
-    where('authorId', '==', userId),
-    where('status', '==', 'published'),
-    orderBy('metadata.publishedAt', 'desc')
-  );
-
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => doc.data());
+export const getPublishedPosts = (userId) => {
+  const posts = getAllPosts();
+  return posts
+    .filter(post => post.authorId === userId && post.status === 'published')
+    .sort((a, b) => new Date(b.metadata.publishedAt) - new Date(a.metadata.publishedAt));
 };
 
 // 更新帖子状态
-export const updatePostStatus = async (postId, status) => {
-  const postRef = doc(db, 'posts', postId);
-  await updateDoc(postRef, {
-    status,
-    ...(status === 'published' ? {
-      'metadata.publishedAt': serverTimestamp()
-    } : {})
-  });
+export const updatePostStatus = (postId, status) => {
+  const posts = getAllPosts();
+  const post = posts.find(p => p.id === postId);
+  
+  if (!post) throw new Error('帖子不存在');
+  
+  post.status = status;
+  if (status === 'published') {
+    post.metadata.publishedAt = new Date().toISOString();
+  }
+  
+  localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
+  return post;
 };
 
 // 处理用户互动
-export const handlePostInteraction = async (postId, userId, type) => {
-  const interactionRef = doc(db, 'post_interactions', `${postId}_${userId}_${type}`);
-  const interactionDoc = await getDoc(interactionRef);
+export const handlePostInteraction = (postId, userId, type) => {
+  const interactions = JSON.parse(localStorage.getItem(POST_INTERACTIONS_KEY) || '[]');
+  const interactionId = `${postId}_${userId}_${type}`;
+  const existingInteraction = interactions.find(i => i.id === interactionId);
+  const posts = getAllPosts();
+  const post = posts.find(p => p.id === postId);
+  
+  if (!post) throw new Error('帖子不存在');
 
-  if (interactionDoc.exists()) {
+  if (existingInteraction) {
     // 取消互动
-    await setDoc(interactionRef, {
-      postId,
-      userId,
-      type,
-      createdAt: serverTimestamp(),
-      active: false
-    });
-
+    existingInteraction.active = false;
+    existingInteraction.updatedAt = new Date().toISOString();
+    
     if (type === 'like') {
-      await updateDoc(doc(db, 'posts', postId), {
-        likeCount: increment(-1)
-      });
+      post.likeCount = Math.max(0, post.likeCount - 1);
     }
   } else {
     // 添加互动
-    await setDoc(interactionRef, {
+    interactions.push({
+      id: interactionId,
       postId,
       userId,
       type,
-      createdAt: serverTimestamp(),
+      createdAt: new Date().toISOString(),
       active: true
     });
-
+    
     if (type === 'like') {
-      await updateDoc(doc(db, 'posts', postId), {
-        likeCount: increment(1)
-      });
+      post.likeCount += 1;
     }
   }
+
+  localStorage.setItem(POST_INTERACTIONS_KEY, JSON.stringify(interactions));
+  localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
 }; 
