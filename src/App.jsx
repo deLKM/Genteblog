@@ -27,6 +27,16 @@ function App() {
           <Route path="/bookmarks" element={<PrivateRoute><Bookmarks /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
           <Route path="/user/:userId" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
+          <Route 
+            path="/profile" 
+            element={
+              <PrivateRoute>
+                {({ currentUser }) => (
+                  <Navigate to={`/user/${currentUser?.uid}`} replace />
+                )}
+              </PrivateRoute>
+            } 
+          />
         </Routes>
       </AuthProvider>
     </Router>

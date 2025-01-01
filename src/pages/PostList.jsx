@@ -361,7 +361,7 @@ function PostList() {
               <div className="flex items-center ml-4 space-x-4">
                 <Link
                   to="/new-post"
-                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex items-center space-x-2 px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -436,7 +436,7 @@ function PostList() {
                       {post.tags.map(tag => (
                         <span
                           key={tag}
-                          className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                          className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                         >
                           #{tag}
                         </span>

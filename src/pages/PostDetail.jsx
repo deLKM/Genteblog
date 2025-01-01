@@ -102,7 +102,7 @@ function PostDetail() {
               <span>{post.date}</span>
               <span>阅读 {Math.floor(Math.random() * 1000)}</span>
               <div className="flex items-center">
-                <span className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
                   {post.category}
                 </span>
               </div>
@@ -158,12 +158,12 @@ function PostDetail() {
             {/* 评论输入框 */}
             <div className="mb-6">
               <textarea
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 rows="3"
                 placeholder="写下你的评论..."
               ></textarea>
               <div className="mt-2 flex justify-end">
-                <button className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <button className="bg-indigo-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-indigo-700 transition-colors">
                   发表评论
                 </button>
               </div>
