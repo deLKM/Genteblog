@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import MdEditor from 'react-markdown-editor-lite';
 import MarkdownIt from 'markdown-it';
 import 'react-markdown-editor-lite/lib/index.css';
+import '../styles/animations.css';
 import { savePost } from '../services/postService';
 
 // 初始化 Markdown 解析器
@@ -127,10 +128,18 @@ export default function NewPost() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden">
+      {/* 背景装饰 */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-20 left-1/4 w-72 h-72 bg-indigo-50/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute top-40 -right-4 w-72 h-72 bg-purple-50/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-32 left-20 w-72 h-72 bg-pink-50/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80008012_1px,transparent_1px),linear-gradient(to_bottom,#80008012_1px,transparent_1px)] bg-[size:14px_14px]"></div>
+      </div>
+
       {/* 顶部导航栏 */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-screen-xl mx-auto px-6">
+      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
             {/* 返回按钮 */}
             <Link
@@ -148,7 +157,7 @@ export default function NewPost() {
               <button
                 type="button"
                 onClick={() => setPreviewMode(!previewMode)}
-                className="inline-flex items-center px-4 py-2 text-gray-700 hover:text-gray-900"
+                className="inline-flex items-center px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -160,7 +169,7 @@ export default function NewPost() {
                 type="button"
                 disabled={loading}
                 onClick={() => handleSave(true)}
-                className={`inline-flex items-center px-4 py-2 text-gray-700 hover:text-gray-900 ${
+                className={`inline-flex items-center px-4 py-2 text-gray-700 hover:text-indigo-600 transition-colors ${
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -173,7 +182,7 @@ export default function NewPost() {
                 type="button"
                 disabled={loading}
                 onClick={() => handleSave(false)}
-                className={`inline-flex items-center px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 ${
+                className={`inline-flex items-center px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors ${
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -188,7 +197,7 @@ export default function NewPost() {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="max-w-screen-xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-8">
         {/* 消息提示 */}
         {message.content && (
           <div className={`mb-6 p-4 rounded-lg ${
@@ -200,7 +209,7 @@ export default function NewPost() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
           {/* 标题输入 */}
           <input
             type="text"
@@ -208,51 +217,9 @@ export default function NewPost() {
             value={formData.title}
             onChange={handleInputChange}
             placeholder="输入文章标题..."
-            className="w-full px-6 py-4 text-2xl font-medium text-gray-900 border-0 border-b border-gray-100 rounded-t-lg focus:ring-0 focus:border-gray-200"
+            className="w-full px-6 py-4 text-2xl font-medium text-gray-900 bg-transparent border-0 border-b border-gray-100 rounded-t-xl focus:ring-0 focus:border-indigo-200"
             required
           />
-
-          {/* 封面图片上传 */}
-          <div className="px-6 py-4 border-b border-gray-100">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              封面图片
-            </label>
-            <div className="flex items-center space-x-4">
-              {formData.coverImage && (
-                <div className="relative w-40 h-24 rounded-lg overflow-hidden">
-                  <img
-                    src={URL.createObjectURL(formData.coverImage)}
-                    alt="封面预览"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, coverImage: null }))}
-                    className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-              <label className="flex-1 flex items-center justify-center h-24 px-6 border-2 border-gray-200 border-dashed rounded-lg hover:border-indigo-500 cursor-pointer">
-                <div className="text-center">
-                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="mt-1 text-sm text-gray-600">点击上传或拖放图片</p>
-                  <p className="mt-1 text-xs text-gray-500">建议尺寸 1200x600，最大 2MB</p>
-                </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleCoverImageChange}
-                />
-              </label>
-            </div>
-          </div>
 
           {/* 分类和标签 */}
           <div className="grid grid-cols-2 gap-6 px-6 py-4 border-b border-gray-100">
@@ -266,7 +233,7 @@ export default function NewPost() {
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="输入分类"
                 required
               />
@@ -281,14 +248,14 @@ export default function NewPost() {
                 name="tags"
                 value={formData.tags}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="使用逗号分隔多个标签"
               />
             </div>
           </div>
 
           {/* Markdown 编辑器 */}
-          <div className="border-t border-gray-100">
+          <div className="border-b border-gray-100">
             <MdEditor
               value={formData.content}
               renderHTML={text => mdParser.render(text)}
@@ -310,6 +277,47 @@ export default function NewPost() {
               }}
               placeholder="使用 Markdown 格式编写文章..."
             />
+          </div>
+
+          {/* 封面图片上传 */}
+          <div className="px-6 py-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              封面图片
+            </label>
+            <div className="flex items-center space-x-4">
+              {formData.coverImage && (
+                <div className="relative w-32 h-20 rounded-lg overflow-hidden">
+                  <img
+                    src={URL.createObjectURL(formData.coverImage)}
+                    alt="封面预览"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, coverImage: null }))}
+                    className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <label className="flex-1 flex items-center justify-center h-20 px-4 border border-gray-200 border-dashed rounded-lg hover:border-indigo-500 cursor-pointer transition-colors">
+                <div className="text-center">
+                  <svg className="mx-auto h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="mt-1 text-xs text-gray-500">建议尺寸 1200x600，最大 2MB</p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleCoverImageChange}
+                />
+              </label>
+            </div>
           </div>
         </div>
       </div>
